@@ -91,33 +91,20 @@ impl EventFormatter {
                 self.cloud_trace_configuration.as_ref(),
                 span.extensions().get::<tracing_opentelemetry::OtelData>(),
             ) {
-                use opentelemetry::trace::TraceContextExt;
-
-                let builder = &otel_data.builder;
-
-                if let Some(span_id) = builder.span_id {
+                if let Some(span_id) = &otel_data.span_id() {
                     map.serialize_entry("logging.googleapis.com/spanId", &span_id.to_string())?;
                 }
 
-                let (trace_id, trace_sampled) = if otel_data.parent_cx.has_active_span() {
-                    let span_ref = otel_data.parent_cx.span();
-                    let span_context = span_ref.span_context();
-
-                    (Some(span_context.trace_id()), span_context.is_sampled())
-                } else {
-                    (builder.trace_id, false)
-                };
-
-                if let Some(trace_id) = trace_id {
+                if let Some(trace_id) = otel_data.trace_id() {
                     map.serialize_entry(
                         "logging.googleapis.com/trace",
                         &format!("projects/{project_id}/traces/{trace_id}",),
                     )?;
                 }
-
-                if trace_sampled {
-                    map.serialize_entry("logging.googleapis.com/trace_sampled", &true)?;
-                }
+                // XXX: not available anymore from otel_data
+                // if trace_sampled {
+                //     map.serialize_entry("logging.googleapis.com/trace_sampled", &true)?;
+                // }
             }
         }
 

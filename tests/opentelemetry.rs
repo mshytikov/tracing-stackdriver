@@ -5,7 +5,7 @@ use opentelemetry::{
     testing::trace::TestSpan,
     trace::{SpanContext, SpanId, TraceContextExt, TraceFlags, TraceId, TraceState},
 };
-use opentelemetry_sdk::trace::TracerProvider;
+use opentelemetry_sdk::trace::SdkTracerProvider;
 use rand::Rng;
 use serde::{de::Error, Deserialize, Deserializer};
 use std::{
@@ -26,7 +26,7 @@ lazy_static! {
     };
 
     // use a tracer that generates valid span IDs (unlike default NoopTracer)
-    static ref TRACER: TracerProvider = TracerProvider::builder()
+    static ref TRACER: SdkTracerProvider = SdkTracerProvider::builder()
         .with_simple_exporter(opentelemetry_stdout::SpanExporter::default())
         .build();
 }
@@ -97,9 +97,9 @@ fn includes_correct_cloud_trace_fields() {
     let make_writer = move || MockWriter(shared.clone());
 
     // generate relevant IDs
-    let mut rng = rand::thread_rng();
-    let span_id = SpanId::from_u64(rng.gen());
-    let trace_id = TraceId::from_u128(rng.gen());
+    let mut rng = rand::rng();
+    let span_id = SpanId::from(rng.random::<u64>());
+    let trace_id = TraceId::from(rng.random::<u128>());
 
     // generate a tracing-based event
     test_with_tracing(span_id, trace_id, make_writer, || {
@@ -136,9 +136,9 @@ fn handles_nested_spans() {
     let make_writer = move || MockWriter(shared.clone());
 
     // generate relevant IDs
-    let mut rng = rand::thread_rng();
-    let span_id = SpanId::from_u64(rng.gen());
-    let trace_id = TraceId::from_u128(rng.gen());
+    let mut rng = rand::rng();
+    let span_id = SpanId::from(rng.random::<u64>());
+    let trace_id = TraceId::from(rng.random::<u128>());
 
     // generate a set of nested tracing-based events
     test_with_tracing(span_id, trace_id, make_writer, || {
